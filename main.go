@@ -112,6 +112,7 @@ type Product struct {
 
 func main() {
 	var myClient = &http.Client{Timeout: 10 * time.Second}
+	pid := "FY4567"
 	reader := bufio.NewReader(os.Stdin)
 	fmt.Println("Select what you want to retrieve: ")
 	fmt.Println("1. Products ")
@@ -129,18 +130,18 @@ func main() {
 		answ, _ := reader.ReadString('\n')
 		answ = strings.TrimRight(answ, "\r\n")
 		//Request to get the cookie for accessing to product availability and the product itself
-		cookieString := RequestCookie("https://www.yeezysupply.com/product/FY4567")
+		cookieString := RequestCookie("https://www.yeezysupply.com/product/" + pid)
 		name, value := splitCookie(cookieString)
 		cookie := &http.Cookie{Name: name, Value: value}
 		switch answ {
 		case "1":
-			req, err := http.NewRequest("GET", "https://www.yeezysupply.com/api/products/FY4567/availability", nil)
+			req, err := http.NewRequest("GET", "https://www.yeezysupply.com/api/products/"+pid+"/availability", nil)
 			req.Header.Add("User-Agent", `Mozilla/5.0 (Windows NT 6.2; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36`)
 			req.AddCookie(cookie)
 			HandleReq(req, myClient, err, Availability{})
 			break
 		case "2":
-			req, err := http.NewRequest("GET", "https://www.yeezysupply.com/api/products/FY4567", nil)
+			req, err := http.NewRequest("GET", "https://www.yeezysupply.com/api/products/"+pid, nil)
 			req.Header.Add("User-Agent", `Mozilla/5.0 (Windows NT 6.2; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36`)
 			req.AddCookie(cookie)
 			HandleReq(req, myClient, err, Product{})
