@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -149,7 +150,10 @@ func main() {
 		}
 
 	} else {
-		fmt.Println("vgg")
+		err := errors.New("wrong imput")
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 
 }
