@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -110,19 +112,49 @@ type Product struct {
 
 func main() {
 	var myClient = &http.Client{Timeout: 10 * time.Second}
-	//Request to get the cookie for accessing to product availability and the product itself
-	cookieString := RequestCookie("https://www.yeezysupply.com/product/FZ5896")
-	name, value := splitCookie(cookieString)
-	fmt.Println(name)
-	fmt.Println(value)
-	//req, err := http.NewRequest("GET", "https://www.yeezysupply.com/api/yeezysupply/products/bloom", nil)
-	//req, err := http.NewRequest("GET", "https://www.yeezysupply.com/api/products/FZ5896/availability", nil)
-	req, err := http.NewRequest("GET", "https://www.yeezysupply.com/api/products/FZ5896", nil)
-	req.Header.Add("User-Agent", `Mozilla/5.0 (Windows NT 6.2; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36`)
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("Select what you want to retrieve: ")
+	fmt.Println("1. Products ")
+	fmt.Println("2. Specific product")
+	answ, _ := reader.ReadString('\n')
+	answ = strings.TrimRight(answ, "\r\n")
+	if answ == "1" {
+		req, err := http.NewRequest("GET", "https://www.yeezysupply.com/api/yeezysupply/products/bloom", nil)
+		req.Header.Add("User-Agent", `Mozilla/5.0 (Windows NT 6.2; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36`)
+		HandleReq(req, myClient, err, Products{})
+	} else if answ == "2" {
+		fmt.Println("Select what you want to retrieve:")
+		fmt.Println("1. Availability ")
+		fmt.Println("2. Product data")
+		answ, _ := reader.ReadString('\n')
+		answ = strings.TrimRight(answ, "\r\n")
+		//Request to get the cookie for accessing to product availability and the product itself
+		cookieString := RequestCookie("https://www.yeezysupply.com/product/FY4567")
+		name, value := splitCookie(cookieString)
+		cookie := &http.Cookie{Name: name, Value: value}
+		switch answ {
+		case "1":
+			req, err := http.NewRequest("GET", "https://www.yeezysupply.com/api/products/FY4567/availability", nil)
+			req.Header.Add("User-Agent", `Mozilla/5.0 (Windows NT 6.2; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36`)
+			req.AddCookie(cookie)
+			HandleReq(req, myClient, err, Availability{})
+			break
+		case "2":
+			req, err := http.NewRequest("GET", "https://www.yeezysupply.com/api/products/FY4567", nil)
+			req.Header.Add("User-Agent", `Mozilla/5.0 (Windows NT 6.2; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36`)
+			req.AddCookie(cookie)
+			HandleReq(req, myClient, err, Product{})
+			break
+		}
 
-	cookie := &http.Cookie{Name: name, Value: value}
-	req.AddCookie(cookie)
-	resp, err := myClient.Do(req)
+	} else {
+		fmt.Println("vgg")
+	}
+
+}
+
+func HandleReq(req *http.Request, client *http.Client, err error, result interface{}) {
+	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println("No response from request")
 	}
@@ -132,7 +164,6 @@ func main() {
 		}
 	}(resp.Body)
 	body, err := ioutil.ReadAll(resp.Body)
-	var result Product
 	if err := json.Unmarshal(body, &result); err != nil { // Parse []byte to go struct pointer
 		log.Printf("error decoding response: %v", err)
 		if e, ok := err.(*json.SyntaxError); ok {
@@ -141,7 +172,6 @@ func main() {
 		log.Printf("response: %s", body)
 	}
 	fmt.Println(PrettyPrint(result))
-
 }
 
 func splitCookie(cookie string) (string, string) {
